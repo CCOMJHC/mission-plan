@@ -65,6 +65,10 @@ class Mission:
         with open(filename,'w') as outfile:
             json.dump(self.plan,outfile, sort_keys=True, indent=4)
 
+    def fromfile(self,filename='mission.txt'):
+        with open(filename,'r') as infile:
+            self.plan = json.load(infile)
+
 class Behavior:
     '''A class to define a template for specifying behavior parameters.
     
@@ -175,8 +179,8 @@ if __name__ == '__main__':
     M.add_default_behavior(B)
     
     wpt = GeoNavWpt()
-    wpt.pt["wpt"]["nav"]['position']['latitude'] = 43.0
-    wpt.pt["wpt"]["nav"]['position']['longitude'] = -70.0
+    wpt.pt["waypoint"]["nav"]['position']['latitude'] = 43.0
+    wpt.pt["waypoint"]["nav"]['position']['longitude'] = -70.0
     #wpt.pt['position']['altitude'] = 0
 
     # Copy the Collision Avoidance Behavior, modify it, and apply it to the waypoint.
@@ -184,22 +188,32 @@ if __name__ == '__main__':
     C.bhv["minimumdistance_m"] = 5.0
     wpt.add_wpt_behavior(C)
 
+    # Add this to the navigation.
     M.add_navigation(wpt.pt)
 
+    # Create a path example. Simplify this by copying the initial waypoint and modifying it as necesary.
     path = GeoNavPath()
     wpt2 = copy.deepcopy(wpt)
-    wpt2.pt["wpt"]["nav"]["position"]["latitude"] = 42.5
+    wpt2.pt["waypoint"]["nav"]["position"]["latitude"] = 42.5
     wpt3 = copy.deepcopy(wpt)
-    wpt3.pt["wpt"]["nav"]["position"]["longitude"] = -69.95
+    wpt3.pt["waypoint"]["nav"]["position"]["longitude"] = -69.95
     wpt3.del_wpt_behavior("collision_avoidance")
 
+    # Add the new waypoints to the path.
     path.add_navigation(wpt2.pt)
     path.add_navigation(wpt3.pt)
 
+    # Add the path to navigation.
     M.add_navigation(path.path)
 
-    print(M)
+    # Print the resulting mission plan to a STDOUT and a a file.
+    # print(M)
     M.tofile()
+
+    MM = Mission("Read From File")
+    MM.fromfile("mission.txt")
+    print(MM)
+
 
 
 

@@ -48,6 +48,7 @@ catkin_python_setup()
  add_message_files(
    FILES
    NavEuler.msg
+   NavEulerStamped.msg
    GeoPoseNavEuler.msg
    GeoPoseNavEulerStamped.msg
    GeoPoseNavEulerWithCovariance.msg

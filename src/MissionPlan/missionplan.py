@@ -99,7 +99,7 @@ class Behavior:
         '''A method to add a new parameter and value to a behavior.'''
         self.bhv[parameter] = value
 
-class GeoNavWpt:
+class GeoNavWaypoint:
     ''' A class to define a human-readable template for points in space and time.
 
     This class definition utilizes ROS messages as templates from which
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     B.add_behavior_parameter('maxrange_m',100.0)
     M.add_default_behavior(B)
     
-    wpt = GeoNavWpt()
+    wpt = GeoNavWaypoint()
     wpt.pt["waypoint"]["nav"]['position']['latitude'] = 43.0
     wpt.pt["waypoint"]["nav"]['position']['longitude'] = -70.0
     #wpt.pt['position']['altitude'] = 0
@@ -206,13 +206,16 @@ if __name__ == '__main__':
     # Add the path to navigation.
     M.add_navigation(path.path)
 
-    # Print the resulting mission plan to a STDOUT and a a file.
-    # print(M)
+    # Print the resulting mission plan to a STDOUT and a file.
+    print(M)
     M.tofile()
 
+    # Read it back in.
     MM = Mission("Read From File")
     MM.fromfile("mission.txt")
-    print(MM)
+    if MM.plan == M.plan:
+        print "true"
+    #print(MM)
 
 
 

@@ -45,15 +45,15 @@ catkin_python_setup()
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-   NavEuler.msg
-   NavEulerStamped.msg
-   GeoPoseNavEuler.msg
-   GeoPoseNavEulerStamped.msg
-   GeoPoseNavEulerWithCovariance.msg
-   GeoPoseNavEulerWithCovarianceStamped.msg
- )
+#  add_message_files(
+#    FILES
+#    NavEuler.msg
+#    NavEulerStamped.msg
+#    GeoPoseNavEuler.msg
+#    GeoPoseNavEulerStamped.msg
+#    GeoPoseNavEulerWithCovariance.msg
+#    GeoPoseNavEulerWithCovarianceStamped.msg
+#  )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -70,12 +70,12 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs  # Or other packages containing msgs
-   geometry_msgs
-   geographic_msgs 
- )
+#  generate_messages(
+#    DEPENDENCIES
+#    std_msgs  # Or other packages containing msgs
+#    geometry_msgs
+#    geographic_msgs 
+#  )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

@@ -8,7 +8,7 @@ import yaml
 import collections
 import copy
 
-import mission_plan.msg as mp
+#import mission_plan.msg as mp
 
 # To Do:
 # Sort out how to force printing of parameters and behaviors before navigation.

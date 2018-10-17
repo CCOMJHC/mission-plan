@@ -68,6 +68,9 @@ class Mission:
     def fromfile(self,filename='mission.txt'):
         with open(filename,'r') as infile:
             self.plan = json.load(infile)
+            
+    def fromString(self, missionString):
+        self.plan = json.loads(missionString)
 
 class Behavior:
     '''A class to define a template for specifying behavior parameters.

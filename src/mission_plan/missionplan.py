@@ -5,7 +5,7 @@
 import geographic_msgs.msg as geo
 import json
 import yaml
-import collections
+from collections import OrderedDict
 import copy
 
 import marine_msgs.msg as mp
@@ -27,10 +27,10 @@ class Mission:
      robot to be specified. This default configuration also includes behaviors that
     become active immediately on mission activation.
 
-    "navigation" provides for a sequential list of navigation objectives, where each object
-    specifies a location, and possibly orientation in space (and possibly time). Embedded in
-    navigation objectives can be new parameters and behaviors that become active when the
-    objective is undertaken.
+    "navigation" provides for a sequential list of navigation paths, where each path
+    specifies one or more locations (waypoints), and possibly orientation in space 
+    (and possibly time). Embedded in navigation paths can be new parameters and 
+    behaviors that become active when the objective is undertaken.
     '''
 
     def __init__(self,mission_name="mission"):
@@ -51,7 +51,7 @@ class Mission:
         for key in behavior.bhv.keys():
             self.plan['DEFAULT_PARAMETERS']['behaviors'][behavior.name][key] = behavior.bhv[key]
             
-    def add_navigation(self,nav,idx = None):
+    def add_navigation_path(self,nav,idx = None):
         ''' A method to add a new navigation objective in the sequential list'''
         if idx is None:
             idx = len(self.plan['NAVIGATION'])
@@ -59,11 +59,18 @@ class Mission:
         
     def __str__(self):
         '''Provide the mission plan in JSON format.'''
-        return json.dumps(self.plan,sort_keys = True,indent=4)
+#        return json.dumps(self.plan,sort_keys = True,indent=4)
+        return json.dumps(self.plan,indent=4)
 
-    def tofile(self,filename='mission.txt'):
+    def tofile(self,filename= None):
+        if filename is None and self.mission_name is not None:
+            filename = self.mission_name + '.txt'
+        else:
+            filename = 'mission.txt'
+            
         with open(filename,'w') as outfile:
-            json.dump(self.plan,outfile, sort_keys=True, indent=4)
+            #json.dump(self.plan,outfile, sort_keys=True, indent=4)
+            json.dump(self.plan,outfile, indent=4)
 
     def fromfile(self,filename='mission.txt'):
         with open(filename,'r') as infile:
@@ -114,7 +121,7 @@ class GeoNavWaypoint:
     are specified in Latitude, Longitude and Altitude and whose orientation
     coordinates are specified as pitch, roll and heading (True). (Geo indicates
     geographic coordinates, Pose indicates position and orientation, NavEuler indicates
-    not just pitch, roll, yaw but rather pitch, roll, heading. (Yaw is measured
+    not pitch, roll, yaw but rather pitch, roll, heading. (Yaw is measured
     counter clockwise from East, while Heading is measured clockwise from North in
     accordance with PEP XXX. This set of coordinates and conventions provides an
     immediately human-understandable pose.
@@ -124,36 +131,39 @@ class GeoNavWaypoint:
         #self.pt = yaml.load(str(geo.GeoPose()))
         wpt_template = yaml.load(str(mp.GeoPoseNavEuler()))
         initmsg(wpt_template)
-        self.pt = {"waypoint":{"nav":wpt_template,
-                   "behaviors":{}}}
-
-    def add_wpt_parameter(self,parameter,value):
-        self.pt["waypoint"][parameter] = value
-
-    def add_wpt_behavior(self,behavior):
-        self.pt["waypoint"]["behaviors"][behavior.name] = {}
-        for key in behavior.bhv.keys():
-            self.pt["waypoint"]['behaviors'][behavior.name][key] = behavior.bhv[key]
-
-    def del_wpt_behavior(self,behavior_name):
-        del self.pt["waypoint"]["behaviors"][behavior_name]
+        self.pt = wpt_template
 
 
 class GeoNavPath:
-
+    ''' A class that implements a container holding a sequential list of navigation
+    objectives, along with parameters and behaviors to be implemented when the 
+    path is undertaken. Paths maybe labeled with a "pathtype" allowing a programmer
+    to define various kinds of paths.'''
+    
     def __init__(self):
-        self.path = {"path":{"parameters":{},"nav":[]}}
+        self.path = OrderedDict([('name',None),
+                                ('pathtype',None),
+                                ('parameters',{}),
+                                ('behaviors',{}),
+                                ('nav',[])])
+        #self.path = {"aname":None,"parameters":{},"nav":[],"behaviors":{},"pathtype":None}
 
-        #self.parameters = {"name":"Navigation Path"}
+    def add_path_behavior(self,behavior):
+        self.path["behaviors"][behavior.name] = {}
+        for key in behavior.bhv.keys():
+                self.path["behaviors"][behavior.name][key] = behavior.bhv[key]
+                
+    def del_path_behavior(self,behavior_name):
+        del self.path["behaviors"][behavior_name]
 
     def add_path_parameter(self, parameter, value):
-        self.path["path"]["parameters"][parameter] = value
+        self.path["parameters"][parameter] = value
 
     def add_navigation(self, nav, idx=None):
         ''' A method to add a new navigation objective in the sequential list'''
         if idx is None:
-            idx = len(self.path["path"])
-        self.path["path"]["nav"].insert(idx, nav)
+            idx = len(self.path["nav"])
+        self.path["nav"].insert(idx, nav)
 
 
 def initmsg(msg):
@@ -164,6 +174,7 @@ def initmsg(msg):
            initmsg(v)
         else:
             msg[k] = None
+
 
 if __name__ == '__main__':
 
@@ -181,41 +192,53 @@ if __name__ == '__main__':
     B.add_behavior_parameter('maxrange_m',100.0)
     M.add_default_behavior(B)
     
-    wpt = GeoNavWaypoint()
-    wpt.pt["waypoint"]["nav"]['position']['latitude'] = 43.0
-    wpt.pt["waypoint"]["nav"]['position']['longitude'] = -70.0
-    #wpt.pt['position']['altitude'] = 0
-
-    # Copy the Collision Avoidance Behavior, modify it, and apply it to the waypoint.
-    C = copy.deepcopy(B)
-    C.bhv["minimumdistance_m"] = 5.0
-    wpt.add_wpt_behavior(C)
-
-    # Add this to the navigation.
-    M.add_navigation(wpt.pt)
 
     # Create a path example. Simplify this by copying the initial waypoint and modifying it as necesary.
+
+
     path = GeoNavPath()
-    wpt2 = copy.deepcopy(wpt)
-    wpt2.pt["waypoint"]["nav"]["position"]["latitude"] = 42.5
-    wpt3 = copy.deepcopy(wpt)
-    wpt3.pt["waypoint"]["nav"]["position"]["longitude"] = -69.95
-    wpt3.del_wpt_behavior("collision_avoidance")
+    path.path['name'] = 'First Three Points'
+    wpt = GeoNavWaypoint()
+    wpt.pt['position']['latitude'] = 43.0
+    wpt.pt['position']['longitude'] = -70.0
+    wpt2 = GeoNavWaypoint()
+    wpt2.pt["position"]["latitude"] = 42.5
+    wpt2.pt["position"]["longitude"] = -70.05
+    wpt3 = GeoNavWaypoint()
+    wpt3.pt["position"]["latitude"] = 42.5
+    wpt3.pt["position"]["longitude"] = -69.95
 
     # Add the new waypoints to the path.
+    path.add_navigation(wpt.pt)
     path.add_navigation(wpt2.pt)
     path.add_navigation(wpt3.pt)
+    path.add_path_behavior(B)
+    path.path["pathtype"] = "trackline"
 
     # Add the path to navigation.
-    M.add_navigation(path.path)
+    M.add_navigation_path(path.path)
 
+    # Create a second path...
+    path = GeoNavPath()
+    path.path['name'] = "End"
+    wpt = GeoNavWaypoint()
+    wpt.pt['position']['latitude'] = 43.0
+    wpt.pt['position']['longitude'] = -70.0
+    path.add_navigation(wpt.pt)
+    
+    B = Behavior('collision_avoidance')
+    B.add_behavior_parameter('minimumdistance_m',4.0)
+    B.add_behavior_parameter('maxrange_m',50.0)
+    path.add_path_behavior(B)
+    path.path['pathtype'] = 'waypoint'
+    M.add_navigation_path(path.path)
     # Print the resulting mission plan to a STDOUT and a file.
     print(M)
     M.tofile()
 
     # Read it back in.
     MM = Mission("Read From File")
-    MM.fromfile("mission.txt")
+    MM.fromfile('Example_Mission.txt')
     if MM.plan == M.plan:
         print "true"
     #print(MM)
